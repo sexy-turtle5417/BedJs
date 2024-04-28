@@ -60,18 +60,27 @@ class HonoParams implements BedParams {
 
 class HonoJSONObject implements JSONObject {
     private requestBody: any;
+    private parent?: string;
 
-    constructor(requestBody: any) {
+    constructor(requestBody: any, parent?: string) {
         this.requestBody = requestBody;
+        this.parent = parent;
+    }
+
+    private getFullKeyname(key?: string): string {
+        if (!key) return "";
+        return `'${this.parent ? `${this.parent}.` : ""}${key}'`;
     }
 
     getString(key: string): string {
         const value = this.requestBody[key] as string;
-        if (!value) throw new BadRequestError(`'${key}' is a required field`);
+        const fullKeyName = this.getFullKeyname(key);
+        if (!value)
+            throw new BadRequestError(`${fullKeyName} is a required field`);
         const zod = z.string().min(1);
         const parseFailure = !zod.safeParse(value).success;
         if (parseFailure)
-            throw new BadRequestError(`'${key}' must be a string`);
+            throw new BadRequestError(`${fullKeyName} must be a string`);
         return value;
     }
 
@@ -83,12 +92,15 @@ class HonoJSONObject implements JSONObject {
 
     getStringArray(key: string): string[] {
         const value = this.requestBody[key] as string[];
+        const fullKeyName = this.getFullKeyname(key);
         if (value == undefined)
-            throw new BadRequestError(`'${key}' is a required field`);
+            throw new BadRequestError(`${fullKeyName} is a required field`);
         const zod = z.array(z.string());
         const parseFailure = !zod.safeParse(value).success;
         if (parseFailure)
-            throw new BadRequestError(`'${key}' must be an array of strings`);
+            throw new BadRequestError(
+                `${fullKeyName} must be an array of strings`
+            );
         return value;
     }
 
@@ -100,12 +112,13 @@ class HonoJSONObject implements JSONObject {
 
     getNumber(key: string): number {
         const value = this.requestBody[key] as number;
+        const fullKeyName = this.getFullKeyname(key);
         if (value == undefined)
-            throw new BadRequestError(`'${key}' is a required field`);
+            throw new BadRequestError(`${fullKeyName} is a required field`);
         const zod = z.number();
         const parseFailure = !zod.safeParse(value);
         if (parseFailure)
-            throw new BadRequestError(`'${key}' must be a number`);
+            throw new BadRequestError(`${fullKeyName} must be a number`);
         return value;
     }
 
@@ -117,12 +130,15 @@ class HonoJSONObject implements JSONObject {
 
     getNumberArray(key: string): number[] {
         const value = this.requestBody[key] as number[];
+        const fullKeyName = this.getFullKeyname(key);
         if (value == undefined)
-            throw new BadRequestError(`'${key}' is a required field`);
+            throw new BadRequestError(`'${fullKeyName}' is a required field`);
         const zod = z.array(z.number());
         const parseFailure = !zod.safeParse(value).success;
         if (parseFailure)
-            throw new BadRequestError(`'${key}' must be an array of numbers`);
+            throw new BadRequestError(
+                `${fullKeyName} must be an array of numbers`
+            );
         return value;
     }
 
@@ -134,12 +150,13 @@ class HonoJSONObject implements JSONObject {
 
     getBoolean(key: string): boolean {
         const value = this.requestBody[key] as boolean;
+        const fullKeyName = this.getFullKeyname(key);
         if (value == undefined)
-            throw new BadRequestError(`'${key}' is a required field`);
+            throw new BadRequestError(`${fullKeyName} is a required field`);
         const zod = z.boolean();
         const parseFailure = !zod.safeParse(value).success;
         if (parseFailure)
-            throw new BadRequestError(`;${key}' must be a boolean`);
+            throw new BadRequestError(`${fullKeyName} must be a boolean`);
         return value;
     }
 
@@ -151,12 +168,15 @@ class HonoJSONObject implements JSONObject {
 
     getBooleanArray(key: string): boolean[] {
         const value = this.requestBody[key] as boolean[];
+        const fullKeyName = this.getFullKeyname(key);
         if (value == undefined)
-            throw new BadRequestError(`'${key}' is a required field`);
+            throw new BadRequestError(`${fullKeyName} is a required field`);
         const zod = z.array(z.boolean());
         const parseFailure = !zod.safeParse(value).success;
         if (parseFailure)
-            throw new BadRequestError(`'${key}' must be an array of booleans`);
+            throw new BadRequestError(
+                `${fullKeyName} must be an array of booleans`
+            );
         return value;
     }
 
@@ -168,9 +188,14 @@ class HonoJSONObject implements JSONObject {
 
     getObject(key: string): JSONObject {
         const value = this.requestBody[key] as any;
+        const fullKeyName = this.getFullKeyname(key);
         if (value == undefined)
-            throw new BadRequestError(`'${key}' is a required field`);
-        return new HonoJSONObject(value);
+            throw new BadRequestError(`${fullKeyName} is a required field`);
+        const zod = z.object({});
+        const parseFailure = !zod.safeParse(value).success;
+        if (parseFailure)
+            throw new BadRequestError(`${fullKeyName} must be an object`);
+        return new HonoJSONObject(value, key);
     }
 
     getObejectOptional(key: string): JSONObject | undefined {
@@ -183,12 +208,15 @@ class HonoJSONObject implements JSONObject {
         let values: any[];
         if (!key) values = this.requestBody as any[];
         else values = this.requestBody[key] as any[];
+        const fullKeyName = this.getFullKeyname(key);
         if (values == undefined)
-            throw new BadRequestError(`'${key}' is a required field`);
-        const zod = z.array(z.any());
+            throw new BadRequestError(`'${fullKeyName}' is a required field`);
+        const zod = z.array(z.object({}));
         const parseFailure = !zod.safeParse(values).success;
         if (parseFailure)
-            throw new BadRequestError(`'${key}' must be an array`);
+            throw new BadRequestError(
+                `'${fullKeyName}' must be an array of objects`
+            );
         return values.map((value) => new HonoJSONObject(value));
     }
 
