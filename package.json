@@ -12,6 +12,7 @@
     "dependencies": {
         "@hono/node-server": "^1.11.1",
         "hono": "^4.2.8",
+        "tsyringe": "^4.8.0",
         "zod": "^3.23.4"
     }
 }
